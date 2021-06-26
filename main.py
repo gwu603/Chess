@@ -41,7 +41,7 @@ board.makeMove("White", "P1213")
 
 #print(board.checkEn_passant("White"))
 
-board.printBoard()
+print(board)
 #x = board.generateMoves("White")
 
 #print(x)
@@ -78,7 +78,7 @@ while False:
         else:
             color = True
 
-    board.printBoard()
+    print(board)
 
 
 

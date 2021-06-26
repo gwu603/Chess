@@ -6,6 +6,17 @@ class Board:
         self.pieces = pieces
         self.board = [[]]
 
+    def __str__(self):
+        visualboard = []
+        b = ""
+        for i in reversed(range(8)):
+            x = []
+            for j in range(8):
+                b += self.board[i][j].name + "  "
+            b += "\n"
+        return b
+
+
 
     def resetBoard(self): #places all pieces on their respective square at the start
         
@@ -16,26 +27,6 @@ class Board:
             col = int(val.pos[0])-1
             self.board[row][col] = val
 
-    def printBoardtest(self,board): #visually prints board in terminal
-        visualboard = []
-        for i in range(8):
-            x = []
-            for j in range(8):
-                x.append(board[i][j].name)
-            visualboard.append(x)
-        for i in reversed(range(8)):
-            print(visualboard[i])
-
-    
-    def printBoard(self): #visually prints board in terminal
-        visualboard = []
-        for i in range(8):
-            x = []
-            for j in range(8):
-                x.append(self.board[i][j].name)
-            visualboard.append(x)
-        for i in reversed(range(8)):
-            print(visualboard[i])
 
     
     def makeMove(self, color, move): #makes a move directly on the instantiated board
