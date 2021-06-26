@@ -4,5 +4,6 @@ class Piece:
         self.name = name
         self.pos = pos
         self.color = color
-    
+        self.hasMoved = False
+        self.movedDouble = False
     
