@@ -1,1 +1,1 @@
-web: gunicorn -k eventlet flask_server:app
+web: gunicorn --worker-class eventlet -w 1 flask_server:app
