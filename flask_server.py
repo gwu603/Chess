@@ -38,7 +38,7 @@ def test():
     return render_template("index.html")
 
 @app.route("/activegames")
-def test():
+def activegames():
     return games
 
 
