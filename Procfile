@@ -1,1 +1,1 @@
-web: gunicorn flask_server:app
+web: gunicorn -k eventlet flask_server:app

@@ -39,7 +39,7 @@ def test():
 
 @app.route("/activegames")
 def activegames():
-    return games
+    return str(game)
 
 
 @socketio.on('message')
