@@ -15,8 +15,50 @@ class Board:
                 b += self.board[i][j].name + "  "
             b += "\n"
         return b
+    
+    def getFen(self, color):
+        fen = ""
+        for i in reversed(range(8)):
+            empty = 0
+            for j in range(8):
+                if self.board[i][j].name != ".":
+                    if empty != 0:
+                        fen += str(empty)
+                        empty = 0
+                    if self.board[i][j].color == "White":
+                        fen += self.board[i][j].name
+                    else:
+                        fen += self.board[i][j].name.lower()
+                else:
+                    empty += 1
+            if empty != 0:
+                fen += str(empty)
+            fen += "/"
+        fen = fen[:-1]
+        fen += " " + color
+        return fen
+    
+    def loadFen(self, fen):
+        board = [[Piece(".","Null","Null") for i in range(8)] for j in range(8)]
+        i = 0
+        j = 0
 
-
+        for x in list(fen):
+            if x == "/":
+                i += 1
+                j = 0
+            elif x.isnumeric():
+                j += int(x)
+            elif x == " ":
+                break
+            else:
+                if x.isupper():
+                    color = "White"
+                else:
+                    color = "Black"
+                board[7-i][j] = Piece(x.upper(), str(j+1) + str(8-i), color)
+                j += 1
+        return board, fen[-5:]
 
     def resetBoard(self): #places all pieces on their respective square at the start
         
@@ -28,7 +70,16 @@ class Board:
             self.board[row][col] = val
 
 
-    
+    def allMoves(self, color):
+        x = self.screenPosMoves(self.generateMoves(color, self.board), color, False)
+        y = self.checkCastling(color, self.board)
+        z = self.screenPosMoves(self.checkEn_passant(color), color, True)
+
+        x.extend(y)
+        x.extend(z)
+        return x
+        
+
     def makeMove(self, color, move): #makes a move directly on the instantiated board
 
         x = self.screenPosMoves(self.generateMoves(color, self.board), color, False)
@@ -67,11 +118,13 @@ class Board:
                 self.board[int(move[-1])][int(move[-2])-1] = Piece(".","Null","Null")
         else:
             print("invalid move")
-            return "invalid move"
+            return "F"
         if color == "White":
             color = "Black"
         else:
             color = "White"
+
+        return "T"
         
         #x = self.screenPosMoves(self.generateMoves(color, self.board), color, False)
         #y = self.screenPosMoves(self.checkEn_passant(color, self.board), color, True)
