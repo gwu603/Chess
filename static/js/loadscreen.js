@@ -2,7 +2,7 @@ let createGame = document.getElementById("createGame")
 let joinGame = document.getElementById("joinGame")
 let submit = document.getElementById("submit")
 
-var socket = io.connect("https://frozen-tor-58069.herokuapp.com/")
+var socket = io.connect("https://frozen-tor-58069.herokuapp.com")
 
 
 createGame.addEventListener("click", function () {
