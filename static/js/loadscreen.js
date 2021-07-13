@@ -4,6 +4,9 @@ let submit = document.getElementById("submit")
 
 var socket = io.connect("https://frozen-tor-58069.herokuapp.com")
 
+socket.on("connect", function () {
+    console.log("connected")
+})
 
 createGame.addEventListener("click", function () {
     const code = Math.random().toString(36).substring(7)
@@ -23,6 +26,7 @@ submit.addEventListener("click", function () {
             localStorage["MOJ"] = "2"
             //socket.emit("switchScreen")
             window.location.href = "test"
+            
         } else {
             console.log("Code DNE")
         }

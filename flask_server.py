@@ -33,10 +33,6 @@ socketio = SocketIO(app, cors_allowed_origins = "*")
 def home():
     return render_template("loadscreen.html")
 
-@app.route("/templates/index.html")
-def index():
-    return render_template("index.html")
-
 @app.route("/test")
 def test():
     return render_template("index.html")
