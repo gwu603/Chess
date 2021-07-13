@@ -37,6 +37,11 @@ def home():
 def test():
     return render_template("index.html")
 
+@app.route("/activegames")
+def test():
+    return games
+
+
 @socketio.on('message')
 def handle_message(data):
     pass
