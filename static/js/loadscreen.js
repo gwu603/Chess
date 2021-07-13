@@ -9,7 +9,8 @@ createGame.addEventListener("click", function () {
     const code = Math.random().toString(36).substring(7)
     localStorage["code"] = code
     localStorage["MOJ"] = "1"
-    window.location.href = "index.html"
+    window.location.href = "test"
+    //socket.emit("switchScreen")
 })
 
 submit.addEventListener("click", function () {
@@ -20,8 +21,8 @@ submit.addEventListener("click", function () {
         if (msg) {
             localStorage["code"] = code
             localStorage["MOJ"] = "2"
-
-            window.location.href = "index.html"
+            //socket.emit("switchScreen")
+            window.location.href = "test"
         } else {
             console.log("Code DNE")
         }

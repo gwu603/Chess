@@ -304,7 +304,7 @@ function createPiece (name, color) {
     }
 
     let element = document.createElement("img");
-    element.src = "images/" + color + name +".jpg";
+    element.src = "static/images/" + color + name +".jpg";
     element.draggable = true;
     element.className = color + name
     element.style.height = "5vw"
