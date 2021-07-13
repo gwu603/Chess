@@ -8,6 +8,10 @@ let parent;
 let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR White"
 var socket = io.connect("https://frozen-tor-58069.herokuapp.com")
 
+socket.on("connect", function () {
+    console.log("board connected")
+})
+
 const gameCode = localStorage["code"]
 
 socket.on("connect", function(){
