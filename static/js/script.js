@@ -6,7 +6,7 @@ let draggedpiece = null;
 var lastaction;
 let parent;
 let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR White KQkq -"
-var socket = io.connect("http://127.0.0.1:5000")
+var socket = io.connect("https://gwuchess.herokuapp.com")
 let flip;
 const gameCode = localStorage["code"]
 var posMoves = {}
@@ -156,6 +156,7 @@ for (let j = 0; j < squares.length; j ++) {
                 }
                 let trialmove = firstletter + move[0] + move[1] + extra + move[2] + move[3];
                 console.log(trialmove)
+                console.log(fen.split(" ")[1], color)
                 if (posMoves[trialmove] != null && fen.split(" ")[1] == playercolor) {
                     fen = posMoves[trialmove]
                     socket.emit("makemove", gameCode, fen)
