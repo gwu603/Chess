@@ -1,25 +1,45 @@
 
-const squares = document.querySelectorAll('.square');
+let squares = document.querySelectorAll('.square');
 const pieces = document.querySelectorAll(".blackrook, .whiterook, .blackbishop, .whitebishop, .blackknight, .whiteknight, .blackpawn, .whitepawn, .blackqueen, .whitequeen, .blackking, .whiteking");
 const background = document.querySelector(".wholeboard");
 let draggedpiece = null;
 var lastaction;
 let parent;
-let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR White"
-var socket = io.connect("https://gwuchess.herokuapp.com")
-
-socket.on("connect", function () {
-    console.log("board connected")
-})
-
+let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR White KQkq -"
+var socket = io.connect("http://127.0.0.1:5000")
+let flip;
 const gameCode = localStorage["code"]
 
 socket.on("connect", function(){
     if (localStorage["MOJ"] == "1") {
         socket.emit("createGame", gameCode)
+        flip = false
+        reloadBoard(fen, flip)
+
     } else {
         socket.emit("joinGame", gameCode)
+        flip = true
+        //reloadBoard(fen, flip)
+        
+        let board = document.querySelector(".board")
+        const squares = document.querySelectorAll(".square")
+        board.innerHTML = "" 
+        for (let i = squares.length-1; i >= 0; i --) {
+            board.appendChild(squares[i])
+        }
+
     }
+})
+
+
+
+socket.on("oppodisconnect", function () {
+    document.getElementById("overlay").style.display = "block"
+    document.getElementById("overlay").innerHTML = ""
+    const text = document.createElement("div")
+    text.id = "text"
+    text.innerText = "Opponent Disconnected"
+    document.getElementById("overlay").appendChild(text)
 })
 
 if (localStorage["MOJ"] == "1") {
@@ -72,9 +92,10 @@ background.addEventListener("dragleave", function () {
 background.addEventListener("drop", function(){
 
     if (lastaction == "dragleave") {
-        reloadBoard(fen)
+        reloadBoard(fen, flip)
     }
 });
+
 
 for (let j = 0; j < squares.length; j ++) {
     const square = squares[j];
@@ -115,14 +136,19 @@ for (let j = 0; j < squares.length; j ++) {
                 if (name.substring(0,2) == "kn") {
                     firstletter = "N"
                 }
+
+                if (firstletter == "P" && move[0] != move [2]){
+                    extra = "x"
+                }
                 let trialmove = firstletter + move[0] + move[1] + extra + move[2] + move[3];
+                console.log(trialmove)
                 const input = trialmove + fen
 
                 //httpPost("http://127.0.0.1:5000/make_move", input, console.log)
                 socket.emit("makemove", gameCode, input)
 
             } else {
-                reloadBoard(fen)
+                reloadBoard(fen, flip)
             }
 
         }
@@ -134,7 +160,7 @@ socket.on('makemove', function(msg) {
     if (msg[0] == "T") {
         fen = msg.substring(1,)
     }
-    reloadBoard(fen)
+    reloadBoard(fen, flip)
 })
 
 
@@ -216,17 +242,26 @@ function httpPost(theURL, input, callback) {
             if (String(xmlHttp.responseText)[0] == "T") {
                 fen = String(xmlHttp.responseText).substring(1,)
             }
-            reloadBoard(fen)
+            reloadBoard(fen, flip)
         }
     }
 }
 
 
-function reloadBoard (fen) {
+function reloadBoard (fen, flip) {
     const squares = document.querySelectorAll(".square")
-    const onlyPieces = fen.split(" ")[0]
+    let onlyPieces = fen.split(" ")[0]
     const lowercase = "prnbqk"
     const uppercase = "PRNBQK"
+
+    if (flip) {
+        let placeholder =""
+        for (let i = onlyPieces.length-1; i >= 0; i --){
+            placeholder += onlyPieces[i]
+        }
+        onlyPieces = placeholder
+    }
+
     let j = 0
     for (let i = 0; i < squares.length; i ++) {
         squares[i].innerHTML = ""
@@ -248,6 +283,8 @@ function reloadBoard (fen) {
         }
     }
 }
+
+
 
 function getFen() {
     const squares = document.querySelectorAll(".square")

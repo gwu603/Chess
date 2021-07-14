@@ -14,15 +14,44 @@ def updateBoard(move, fen):
     pieces = []
     board = Board(pieces)
     board.board, color = board.loadFen(fen)
+    
     # print(color)
-    x = board.makeMove(color, move)
-    if x != "invalid move":
+    x = board.makeMove(color, move, fen)
+    if x != "F":
         if color == "White":
             color = "Black"
         else:
             color = "White"
-    newfen = board.getFen(color)
-    fen = newfen
+    
+
+    newfen = board.getFen(fen)
+    holderfen = newfen.split()
+
+    if x != "F":
+
+        if x == "xKside":
+            holderfen[2] = "-" + holderfen[2][1:]
+        elif x == "xQside":
+            holderfen[2] = holderfen[2][0] + "-" + holderfen[2][2:]
+        elif x == "xkside":
+            holderfen[2] = holderfen[2][:2] + "-" + holderfen[2][3]
+        elif x == "xqside":
+            holderfen[2] = holderfen[2][:3] + "-"
+        elif x == "xK":
+            holderfen[2] = "--" + holderfen[2][2:]
+        elif x == "xk":
+            holderfen[2] = holderfen[2][:2] + "--"
+        else:
+            holderfen[3] = x
+        if move[0] != "P" or abs(int(move[2])-int(move[-1])) != 2:
+            holderfen[3] = "-"
+        x = "T"
+
+
+
+
+    newfen = holderfen[0] + " " + color + " " + holderfen[2] + " " + holderfen[3]
+    
     return x, newfen
 
 
@@ -44,29 +73,28 @@ def activegames():
 
 @socketio.on('message')
 def handle_message(data):
-    pass
+    print(data)
+
 
 @socketio.on("switchScreen")
 def switchScreen():
-    print("ran")
     return render_template("index.html")
 
 @socketio.on("makemove")
 def makemove(gameCode, data):
-    print(request.sid)
-    if data[6] == "x":
+    print(data)
+    if data[3] == "x":
         move = data[0:6]
         fen = data[6:]
     else:
         move = data[0:5]
         fen = data[5:]
-    print(move, fen)
     x, newfen = updateBoard(move, fen)
-    print(fen[-5:])
-    if game[gameCode][0] == request.sid and fen[-5:] != "White":
+    holder = fen.split()
+    if game[gameCode][0] == request.sid and holder[1] != "White":
         x = "F"
     
-    if game[gameCode][1] == request.sid and fen[-5:] != "Black":
+    if game[gameCode][1] == request.sid and holder[1] != "Black":
         x = "F"
     
     output = x + newfen
@@ -128,11 +156,6 @@ def checkCode(code):
 # @app.route("/create_game", methods = ["GET"])
 # def create_game():
 #     pass
-
-
-
-
-
 
 
 if __name__ == '__main__':

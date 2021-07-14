@@ -16,7 +16,7 @@ class Board:
             b += "\n"
         return b
     
-    def getFen(self, color):
+    def getFen(self, pastFen):
         fen = ""
         for i in reversed(range(8)):
             empty = 0
@@ -35,7 +35,9 @@ class Board:
                 fen += str(empty)
             fen += "/"
         fen = fen[:-1]
-        fen += " " + color
+        holder = pastFen.split()
+        fen += " " + holder[1] + " " + holder[2] + " " + holder[3]
+
         return fen
     
     def loadFen(self, fen):
@@ -58,7 +60,8 @@ class Board:
                     color = "Black"
                 board[7-i][j] = Piece(x.upper(), str(j+1) + str(8-i), color)
                 j += 1
-        return board, fen[-5:]
+        holder = fen.split()
+        return board, holder[1]
 
     def resetBoard(self): #places all pieces on their respective square at the start
         
@@ -80,37 +83,64 @@ class Board:
         return x
         
 
-    def makeMove(self, color, move): #makes a move directly on the instantiated board
+    def makeMove(self, color, move, fen): #makes a move directly on the instantiated board
 
         x = self.screenPosMoves(self.generateMoves(color, self.board), color, False)
-        y = self.checkCastling(color, self.board)
-        z = self.screenPosMoves(self.checkEn_passant(color), color, True)
+        y = self.checkCastling(color, self.board, fen)
+        z = self.screenPosMoves(self.checkEn_passant(color, fen), color, True)
 
 
         if move in x:
             self.board[int(move[2])-1][int(move[1])-1].pos = move[-2] + move[-1]
-            self.board[int(move[2])-1][int(move[1])-1].hasMoved = True
             self.board[int(move[-1])-1][int(move[-2])-1] = self.board[int(move[2])-1][int(move[1])-1]
             self.board[int(move[2])-1][int(move[1])-1] = Piece(".","Null","Null")
+
+            if move[0] == "R" and move[1:3] == "11":
+                return "xQside"
+            if move[0] == "R" and move[1:3] == "81":
+                return "xKside"
+            if move[0] == "R" and move[1:3] == "18":
+                return "xqside"
+            if move[0] == "R" and move[1:3] == "88":
+                return "xkside"
+            if move[0] == "K" and self.board[int(move[-1])-1][int(move[-2])-1].color == "White":
+                return "xK"
+            if move[0] == "K" and self.board[int(move[-1])-1][int(move[-2])-1].color == "Black":
+                return "xk"
+             
             if move[0] == "P" and abs(int(move[2])-int(move[-1])) == 2:
-                self.board[int(move[-1])-1][int(move[-2])-1].movedDouble = True
+                if move[2] == "2":
+                    return move[1] + "3"
+                if move[2] == "7":
+                    return move[1] + "6"
             if move[0] == "P" and move[-1] == 8 and color == "White":
                 return "promote"
             if move[0] == "P" and move[-1] == 0 and color == "Black":
                 return "promote"
         elif move in y:
+
+            self.board[int(move[2])-1][int(move[1])-1].pos = move[-2] + move[-1]
+            self.board[int(move[-1])-1][int(move[-2])-1] = self.board[int(move[2])-1][int(move[1])-1]
+            self.board[int(move[2])-1][int(move[1])-1] = Piece(".","Null","Null")
+
             if move[-2] == "7":
                 self.board[int(move[2])-1][7].pos = "6" + move[-1]
                 self.board[int(move[-1])-1][5] = self.board[int(move[2])-1][7]
                 self.board[int(move[2])-1][7] = Piece(".","Null","Null")
+
             else:
                 self.board[int(move[2])-1][0].pos = "4" + move[-1]
                 self.board[int(move[-1])-1][3] = self.board[int(move[2])-1][0]
                 self.board[int(move[2])-1][0] = Piece(".","Null","Null")
+
+            if color == "White":
+                return "xK"
+            else:
+                return "xk"
         elif move in z:
             self.board[int(move[2])-1][int(move[1])-1].pos = move[-2] + move[-1]
             self.board[int(move[2])-1][int(move[1])-1].hasMoved = True
-            self.board[int(move[-1])-1][int(move[-2])-1] = board[int(move[2])-1][int(move[1])-1]
+            self.board[int(move[-1])-1][int(move[-2])-1] = self.board[int(move[2])-1][int(move[1])-1]
             self.board[int(move[2])-1][int(move[1])-1] = Piece(".","Null","Null")
             if color == "White":
                 self.board[int(move[-1])-2][int(move[-2])-1] = Piece(".","Null","Null")
@@ -176,7 +206,7 @@ class Board:
                             if not (row < 1 or row > 8 or col < 1 or col > 8):
                                 if board[row-1][col-1].pos == str(col) + str(row):
                                     if board[row-1][col-1].color != piece.color:
-                                        moves.append(move)
+                                        moves.append(move[:-2] + "x" + move[-2:])
                                 else:
                                     moves.append(move)
 
@@ -198,38 +228,54 @@ class Board:
                                 moves.append(name+str(piece.pos[0])+str(piece.pos[1])+"x"+str(col+take[1][0])+str(row+take[1][1]))
         return moves
 
-    def checkEn_passant(self, color):
+    def checkEn_passant(self, color, fen):
         move = []
         if color == "White":
             direction = 1
+            target = fen.split()[3][0] + "5"
         else:
             direction = -1
+            target = fen.split()[3][0] + "4"
+
         for i in range(8):
             for j in range(8):
                 if self.board[i][j].color == color:
                     if self.board[i][j].name == "P" and j < 7:
-                        if self.board[i][j+1].name == "P" and self.board[i][j+1].movedDouble:
+                        if self.board[i][j+1].name == "P" and target == self.board[i][j+1].pos:
                             move.append("P"+ str(self.board[i][j].pos) + "x" + str(int(self.board[i][j].pos[0])+1) + str(int(self.board[i][j].pos[1])+direction))
                     if self.board[i][j].name == "P" and j > 1:
-                        if self.board[i][j-1].name == "P" and self.board[i][j-1].movedDouble:
-                            move.append("P"+self.board[i][j].pos + "x" + str(int(self.board[i][j].pos[0])-1) + str(int(self.board[i][j].pos[1]+direction)))
-        #print(move)
+                        if self.board[i][j-1].name == "P" and target == self.board[i][j-1].pos:
+                            move.append("P"+self.board[i][j].pos + "x" + str(int(self.board[i][j].pos[0])-1) + str(int(self.board[i][j].pos[1])+direction))
+        print(move)
         return move
     
-    def checkCastling(self, color, board):
+    def checkCastling(self, color, board, fen):
         move = []
         if color == "White":
             row = 1
+            upper = True
         else:
             row = 8
+            upper = False
+
+
         if not self.isCheck(color, "K5"+str(row)+"5"+str(row), False):
-            if board[row-1][4].name == "K" and board[row-1][4].hasMoved == False and board[row-1][0].hasMoved == False:
-                if board[row-1][3].name == "." and board[row-1][2].name == "." and board[row-1][1].name == ".":
-                    if not self.isCheck(color, "K5"+str(row)+"4"+str(row), False) and not self.isCheck(color, "K5"+str(row)+"3"+str(row), False):
+            if board[row-1][4].name == "K" and board[row-1][3].name == "." and board[row-1][2].name == "." and board[row-1][1].name == ".":
+                if not self.isCheck(color, "K5"+str(row)+"4"+str(row), False) and not self.isCheck(color, "K5"+str(row)+"3"+str(row), False):
+                    if upper:
+                        checker = "Q"
+                    else:
+                        checker = "q"
+                    if fen.split()[2].find(checker) != -1:
                         move.append("K5"+str(row) + "3"+ str(row))
-            if board[row-1][4].name == "K" and board[row-1][4].hasMoved == False and board[row-1][7].hasMoved == False:
-                if board[row-1][5].name == "." and board[row-1][6].name == ".":
-                    if not self.isCheck(color, "K5"+str(row)+"6"+str(row), False) and not self.isCheck(color, "K5"+str(row)+"7"+str(row), False):
+            if board[row-1][4].name == "K" and board[row-1][5].name == "." and board[row-1][6].name == ".":
+
+                if not self.isCheck(color, "K5"+str(row)+"6"+str(row), False) and not self.isCheck(color, "K5"+str(row)+"7"+str(row), False):
+                    if upper:
+                        checker = "K"
+                    else:
+                        checker = "k"
+                    if fen.split()[2].find(checker) != -1:
                         move.append("K5"+str(row) + "7"+ str(row))
         return move    
 

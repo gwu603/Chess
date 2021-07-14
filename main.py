@@ -31,18 +31,18 @@ pieces = generatepieces()
 board = Board(pieces)
 board.resetBoard()
 #board.printBoard()
-color = True
 
 
 
-# board.makeMove("White", "P4445")
-# board.makeMove("Black", "P5755")
-# board.makeMove("White", "P1213")
-
+board.makeMove("White", "P4244")
+board.makeMove("White", "P4445")
+board.makeMove("Black", "P5755")
+# board.makeMove("Black", "P4745")
+print(board.allMoves("White"))
 #print(board.checkEn_passant("White"))
 
 
-board.board, color = board.loadFen("rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR White")
+# board.board, color = board.loadFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR White)
 print(board)
 # print(board.allMoves("White"))
 
