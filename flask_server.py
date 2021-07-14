@@ -10,49 +10,51 @@ from board import Board
 # board.board = board.loadFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR")
 game = {}
 
-def updateBoard(move, fen):
+def updateBoard(fen):
     pieces = []
     board = Board(pieces)
     board.board, color = board.loadFen(fen)
     
-    # print(color)
-    x = board.makeMove(color, move, fen)
-    if x != "F":
-        if color == "White":
-            color = "Black"
-        else:
-            color = "White"
-    
+    allMoves = board.allMoves(color, fen)
+    movedict = {}
+    for move in allMoves:
+        newboard = Board(pieces)
+        newboard.board, color = newboard.loadFen(fen)
+        x = newboard.makeMove(color, move, fen)
+        if x != "F":
+            if color == "White":
+                color = "Black"
+            else:
+                color = "White"
+        
 
-    newfen = board.getFen(fen)
-    holderfen = newfen.split()
+        newfen = newboard.getFen(fen)
+        holderfen = newfen.split()
 
-    if x != "F":
+        if x != "F":
 
-        if x == "xKside":
-            holderfen[2] = "-" + holderfen[2][1:]
-        elif x == "xQside":
-            holderfen[2] = holderfen[2][0] + "-" + holderfen[2][2:]
-        elif x == "xkside":
-            holderfen[2] = holderfen[2][:2] + "-" + holderfen[2][3]
-        elif x == "xqside":
-            holderfen[2] = holderfen[2][:3] + "-"
-        elif x == "xK":
-            holderfen[2] = "--" + holderfen[2][2:]
-        elif x == "xk":
-            holderfen[2] = holderfen[2][:2] + "--"
-        else:
-            holderfen[3] = x
-        if move[0] != "P" or abs(int(move[2])-int(move[-1])) != 2:
-            holderfen[3] = "-"
-        x = "T"
+            if x == "xKside":
+                holderfen[2] = "-" + holderfen[2][1:]
+            elif x == "xQside":
+                holderfen[2] = holderfen[2][0] + "-" + holderfen[2][2:]
+            elif x == "xkside":
+                holderfen[2] = holderfen[2][:2] + "-" + holderfen[2][3]
+            elif x == "xqside":
+                holderfen[2] = holderfen[2][:3] + "-"
+            elif x == "xK":
+                holderfen[2] = "--" + holderfen[2][2:]
+            elif x == "xk":
+                holderfen[2] = holderfen[2][:2] + "--"
+            else:
+                holderfen[3] = x
+            if move[0] != "P" or abs(int(move[2])-int(move[-1])) != 2:
+                holderfen[3] = "-"
+            x = "T"
 
+        newfen = holderfen[0] + " " + color + " " + holderfen[2] + " " + holderfen[3]
+        movedict[move] = newfen
 
-
-
-    newfen = holderfen[0] + " " + color + " " + holderfen[2] + " " + holderfen[3]
-    
-    return x, newfen
+    return movedict
 
 
 app = Flask(__name__)
@@ -75,32 +77,30 @@ def activegames():
 def handle_message(data):
     print(data)
 
+@socketio.on("initialMoves")
+def initialmoves():
+    movedict = updateBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR White KQkq -")
+    emit("initialMoves", movedict)
 
 @socketio.on("switchScreen")
 def switchScreen():
     return render_template("index.html")
 
 @socketio.on("makemove")
-def makemove(gameCode, data):
-    print(data)
-    if data[3] == "x":
-        move = data[0:6]
-        fen = data[6:]
-    else:
-        move = data[0:5]
-        fen = data[5:]
-    x, newfen = updateBoard(move, fen)
-    holder = fen.split()
-    if game[gameCode][0] == request.sid and holder[1] != "White":
-        x = "F"
+def makemove(gameCode, fen):
     
-    if game[gameCode][1] == request.sid and holder[1] != "Black":
-        x = "F"
-    
-    output = x + newfen
-    emit("makemove", output, room = game[gameCode][0])
-    emit("makemove", output, room = game[gameCode][1])
 
+    movedict = updateBoard(fen)
+    # holder = fen.split()
+
+
+
+    if game[gameCode][0] == request.sid:
+        emit("oppoMove", movedict, room = game[gameCode][1])
+        emit("updatedFen", fen, room = game[gameCode][1])
+    if game[gameCode][1] == request.sid:
+        emit("oppoMove", movedict, room = game[gameCode][0])
+        emit("updatedFen", fen, room = game[gameCode][0])
 
 @socketio.on("createGame")
 def createGame(code):

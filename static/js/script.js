@@ -6,14 +6,22 @@ let draggedpiece = null;
 var lastaction;
 let parent;
 let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR White KQkq -"
-var socket = io.connect("https://gwuchess.herokuapp.com")
+var socket = io.connect("http://127.0.0.1:5000")
 let flip;
 const gameCode = localStorage["code"]
+var posMoves = {}
+var dstate = true
+var playercolor = ""
 
 socket.on("connect", function(){
     if (localStorage["MOJ"] == "1") {
         socket.emit("createGame", gameCode)
         flip = false
+        socket.emit("initialMoves")
+        socket.on("initialMoves", function(moves) {
+            posMoves = moves
+        })
+        playercolor = "White"
         reloadBoard(fen, flip)
 
     } else {
@@ -27,20 +35,14 @@ socket.on("connect", function(){
         for (let i = squares.length-1; i >= 0; i --) {
             board.appendChild(squares[i])
         }
+        playercolor = "Black"
+        dstate = false
 
     }
 })
 
 
 
-socket.on("oppodisconnect", function () {
-    document.getElementById("overlay").style.display = "block"
-    document.getElementById("overlay").innerHTML = ""
-    const text = document.createElement("div")
-    text.id = "text"
-    text.innerText = "Opponent Disconnected"
-    document.getElementById("overlay").appendChild(text)
-})
 
 if (localStorage["MOJ"] == "1") {
     const overlay = document.createElement("div")
@@ -97,6 +99,18 @@ background.addEventListener("drop", function(){
 });
 
 
+
+socket.on("oppoMove", function (moves) {
+    posMoves = moves
+    dstate = true
+})
+
+socket.on("updatedFen", function(newfen) {
+    fen = newfen
+    reloadBoard(fen, flip)
+})
+
+
 for (let j = 0; j < squares.length; j ++) {
     const square = squares[j];
 
@@ -142,10 +156,18 @@ for (let j = 0; j < squares.length; j ++) {
                 }
                 let trialmove = firstletter + move[0] + move[1] + extra + move[2] + move[3];
                 console.log(trialmove)
-                const input = trialmove + fen
+                if (posMoves[trialmove] != null && fen.split(" ")[1] == playercolor) {
+                    fen = posMoves[trialmove]
+                    socket.emit("makemove", gameCode, fen)
+                    const pieces = document.querySelectorAll(".blackrook, .whiterook, .blackbishop, .whitebishop, .blackknight, .whiteknight, .blackpawn, .whitepawn, .blackqueen, .whitequeen, .blackking, .whiteking");
+
+                    dstate = false
+                } 
+                reloadBoard(fen, flip)
+                //const input = trialmove + fen
 
                 //httpPost("http://127.0.0.1:5000/make_move", input, console.log)
-                socket.emit("makemove", gameCode, input)
+                //socket.emit("makemove", gameCode, input)
 
             } else {
                 reloadBoard(fen, flip)
@@ -155,13 +177,13 @@ for (let j = 0; j < squares.length; j ++) {
     });
 }
 
-socket.on('makemove', function(msg) {
-    console.log("msg recieved")
-    if (msg[0] == "T") {
-        fen = msg.substring(1,)
-    }
-    reloadBoard(fen, flip)
-})
+// socket.on('makemove', function(msg) {
+//     console.log("msg recieved")
+//     if (msg[0] == "T") {
+//         fen = msg.substring(1,)
+//     }
+//     reloadBoard(fen, flip)
+// })
 
 
 
@@ -346,7 +368,7 @@ function createPiece (name, color) {
 
     let element = document.createElement("img");
     element.src = "static/images/" + color + name +".jpg";
-    element.draggable = true;
+    element.draggable = dstate
     element.className = color + name
     element.style.height = "5vw"
     element.style.width = "5vw"

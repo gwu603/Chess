@@ -73,10 +73,10 @@ class Board:
             self.board[row][col] = val
 
 
-    def allMoves(self, color):
+    def allMoves(self, color, fen):
         x = self.screenPosMoves(self.generateMoves(color, self.board), color, False)
-        y = self.checkCastling(color, self.board)
-        z = self.screenPosMoves(self.checkEn_passant(color), color, True)
+        y = self.checkCastling(color, self.board, fen)
+        z = self.screenPosMoves(self.checkEn_passant(color, fen), color, True)
 
         x.extend(y)
         x.extend(z)
@@ -246,7 +246,6 @@ class Board:
                     if self.board[i][j].name == "P" and j > 1:
                         if self.board[i][j-1].name == "P" and target == self.board[i][j-1].pos:
                             move.append("P"+self.board[i][j].pos + "x" + str(int(self.board[i][j].pos[0])-1) + str(int(self.board[i][j].pos[1])+direction))
-        print(move)
         return move
     
     def checkCastling(self, color, board, fen):

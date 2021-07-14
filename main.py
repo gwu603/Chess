@@ -32,13 +32,55 @@ board = Board(pieces)
 board.resetBoard()
 #board.printBoard()
 
+fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR White KQkq - 0 1"
 
 
-board.makeMove("White", "P4244")
-board.makeMove("White", "P4445")
-board.makeMove("Black", "P5755")
-# board.makeMove("Black", "P4745")
-print(board.allMoves("White"))
+# board.makeMove("White", "P4244")
+# board.makeMove("White", "P4445")
+# board.makeMove("Black", "P5755")
+# # board.makeMove("Black", "P4745")
+print(board.allMoves("White", fen))
+allMoves = board.allMoves("White", fen)
+movedict = {}
+for move in allMoves:
+    newboard = Board(pieces)
+    newboard.board, color = newboard.loadFen(fen)
+
+    x = newboard.makeMove(color, move, fen)
+    
+    if x != "F":
+        if color == "White":
+            color = "Black"
+        else:
+            color = "White"
+    
+    newfen = newboard.getFen(fen)
+    holderfen = newfen.split()
+
+    if x != "F":
+
+        if x == "xKside":
+            holderfen[2] = "-" + holderfen[2][1:]
+        elif x == "xQside":
+            holderfen[2] = holderfen[2][0] + "-" + holderfen[2][2:]
+        elif x == "xkside":
+            holderfen[2] = holderfen[2][:2] + "-" + holderfen[2][3]
+        elif x == "xqside":
+            holderfen[2] = holderfen[2][:3] + "-"
+        elif x == "xK":
+            holderfen[2] = "--" + holderfen[2][2:]
+        elif x == "xk":
+            holderfen[2] = holderfen[2][:2] + "--"
+        else:
+            holderfen[3] = x
+        if move[0] != "P" or abs(int(move[2])-int(move[-1])) != 2:
+            holderfen[3] = "-"
+        x = "T"
+
+    newfen = holderfen[0] + " " + color + " " + holderfen[2] + " " + holderfen[3]
+    movedict[move] = newfen
+
+print(movedict)
 #print(board.checkEn_passant("White"))
 
 
