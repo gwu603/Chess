@@ -6,7 +6,7 @@ let draggedpiece = null;
 var lastaction;
 let parent;
 let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR White KQkq -"
-var socket = io.connect("http://127.0.0.1:5000")
+var socket = io.connect("https://gwuchess.herokuapp.com")
 let flip;
 const gameCode = localStorage["code"]
 
