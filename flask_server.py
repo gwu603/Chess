@@ -13,9 +13,9 @@ game = {}
 def updateBoard(fen):
     pieces = []
     board = Board(pieces)
-    board.board, color = board.loadFen(fen)
+    board.board, xcolor = board.loadFen(fen)
     
-    allMoves = board.allMoves(color, fen)
+    allMoves = board.allMoves(xcolor, fen)
     movedict = {}
     for move in allMoves:
         newboard = Board(pieces)
@@ -53,7 +53,12 @@ def updateBoard(fen):
 
         newfen = holderfen[0] + " " + color + " " + holderfen[2] + " " + holderfen[3]
         movedict[move] = newfen
+    if not movedict:
 
+        if board.checkmateChecker(xcolor, board.board):
+            movedict = "checkmate"
+        else:
+            movedict = "stalemate"
     return movedict
 
 
@@ -89,12 +94,8 @@ def switchScreen():
 @socketio.on("makemove")
 def makemove(gameCode, fen):
     
-
     movedict = updateBoard(fen)
     # holder = fen.split()
-
-
-
     if game[gameCode][0] == request.sid:
         emit("oppoMove", movedict, room = game[gameCode][1])
         emit("updatedFen", fen, room = game[gameCode][1])
@@ -127,6 +128,11 @@ def checkCode(code):
             emit("checkCode", False)
     else:
         emit("checkCode", False)
+
+@socketio.on("gameOver")
+def gameOver(code, ending):
+    emit("gameOver", ending, room = game[code][0])
+    emit("gameOver", ending, room = game[code][1])
 
 # @app.route('/')
 # def hello_world():

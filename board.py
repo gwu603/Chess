@@ -218,8 +218,9 @@ class Board:
                             direction, take, lineChecker = -1, [(1,-1),(-1,-1)], 7
                         if board[row-1 + direction][col-1].name == ".":
                             moves.append(name+str(col)+str(row)+str(col)+str(row+direction))
-                            if board[row-1 + 2*direction][col-1].name == "." and row == lineChecker:
-                                moves.append(name+str(col)+str(row)+str(col)+str(row+2*direction))
+                            if row == lineChecker:
+                                if board[row-1 + 2*direction][col-1].name == ".":
+                                    moves.append(name+str(col)+str(row)+str(col)+str(row+2*direction))
                         if col < 8:
                             if board[row-1+take[0][1]][col-1+take[0][0]].name != "." and board[row-1+take[0][1]][col-1+take[0][0]].color != color:
                                 moves.append(name+str(piece.pos[0])+str(piece.pos[1])+"x"+str(col+take[0][0])+str(row+take[0][1]))
@@ -336,7 +337,17 @@ class Board:
                 return True
         return False
 
+    def checkmateChecker(self, color, board):
+        if color == "White":
+            color = "Black"
+        else:
+            color = "White"
 
+        x = self.generateMoves(color, board)
+        for val in x:
+            if board[int(val[-1])-1][int(val[-2])-1].name == "K":
+                return True
+        return False
 
     def getSquare(self, square): #returns the piece of a given square on the board
         return self.board[square[1]][square[0]]
