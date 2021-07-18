@@ -1,6 +1,7 @@
 let createGame = document.getElementById("createGame")
 let joinGame = document.getElementById("joinGame")
 let submit = document.getElementById("submit")
+let playEngine = document.getElementById("playEngine")
 
 var socket = io.connect("https://gwuchess.herokuapp.com")
 
@@ -9,7 +10,7 @@ socket.on("connect", function () {
 })
 
 createGame.addEventListener("click", function () {
-    const code = Math.random().toString(36).substring(7)
+    const code = Math.random().toString(36).substring(2,7);
     localStorage["code"] = code
     localStorage["MOJ"] = "1"
     window.location.href = "test"
@@ -32,4 +33,11 @@ submit.addEventListener("click", function () {
         }
     })
 
+})
+
+playEngine.addEventListener("click", function() {
+    const code = Math.random().toString(36).substring(2,7);
+    localStorage["code"] = "CPU" + code
+    localStorage["MOJ"] = "3"
+    window.location.href = "test"
 })

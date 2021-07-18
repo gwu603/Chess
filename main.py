@@ -1,6 +1,6 @@
 from piece import Piece
 from board import Board
-
+from stockfish import Stockfish
 
 
 
@@ -34,6 +34,15 @@ board.resetBoard()
 
 fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR White KQkq - 0 1"
 
+# stockfish = Stockfish("/Users/zhelyabuzhsky/Work/stockfish/stockfish-9-64")
+
+stockfish = Stockfish(r"C:\Users\yiqin\Desktop\stockfish_14_win_x64_avx2\stockfish_14_win_x64_avx2\stockfish_14_x64_avx2.exe")
+# stockfish = Stockfish(parameters={"Threads": 2, "Minimum Thinking Time": 30})
+
+stockfish.set_fen_position("rnbqkbnr/pppp1ppp/4p3/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2")
+
+print(stockfish.get_best_move())
+
 
 # board.makeMove("White", "P4244")
 # board.makeMove("White", "P4445")
@@ -42,11 +51,11 @@ fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR White KQkq - 0 1"
 print(board.allMoves("White", fen))
 allMoves = board.allMoves("White", fen)
 movedict = {}
-for move in allMoves:
+for move in allMoves[0]:
     newboard = Board(pieces)
     newboard.board, color = newboard.loadFen(fen)
 
-    x = newboard.makeMove(color, move, fen)
+    x = newboard.makeMove(color, move, fen, allMoves[1], allMoves[2], allMoves[3])
     
     if x != "F":
         if color == "White":

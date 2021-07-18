@@ -4,6 +4,8 @@ from flask_socketio import SocketIO, send, join_room, leave_room, emit
 
 from piece import Piece
 from board import Board
+from stockfish import Stockfish
+
 
 # pieces = []
 # board = Board(pieces)
@@ -17,10 +19,10 @@ def updateBoard(fen):
     
     allMoves = board.allMoves(xcolor, fen)
     movedict = {}
-    for move in allMoves:
+    for move in allMoves[0]:
         newboard = Board(pieces)
         newboard.board, color = newboard.loadFen(fen)
-        x = newboard.makeMove(color, move, fen)
+        x = newboard.makeMove(color, move, fen, allMoves[1], allMoves[2], allMoves[3])
         if x != "F":
             if color == "White":
                 color = "Black"
@@ -49,9 +51,16 @@ def updateBoard(fen):
                 holderfen[3] = x
             if move[0] != "P" or abs(int(move[2])-int(move[-1])) != 2:
                 holderfen[3] = "-"
+            if move[0] == "P" or move[3] == "x":
+                holderfen[4] = "0"
+            else:
+                holderfen[4] = str(int(holderfen[4]) + 1)
+            if xcolor == "Black":
+                holderfen[5] = str(int(holderfen[5]) + 1)
+
             x = "T"
 
-        newfen = holderfen[0] + " " + color + " " + holderfen[2] + " " + holderfen[3]
+        newfen = holderfen[0] + " " + color + " " + holderfen[2] + " " + holderfen[3] + " " + holderfen[4] + " " + holderfen[5]
         movedict[move] = newfen
     if not movedict:
 
@@ -84,8 +93,15 @@ def handle_message(data):
 
 @socketio.on("initialMoves")
 def initialmoves():
-    movedict = updateBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR White KQkq -")
+    movedict = updateBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR White KQkq - 0 1")
     emit("initialMoves", movedict)
+
+@socketio.on("chatmessage")
+def chatmessage(code,msg):
+    if game[code][0] == request.sid:
+        emit("chatmessage", msg, room = game[code][1])
+    else:
+        emit("chatmessage", msg, room = game[code][0])
 
 @socketio.on("switchScreen")
 def switchScreen():
@@ -94,20 +110,73 @@ def switchScreen():
 @socketio.on("makemove")
 def makemove(gameCode, fen):
     
-    movedict = updateBoard(fen)
     # holder = fen.split()
-    if game[gameCode][0] == request.sid:
-        emit("oppoMove", movedict, room = game[gameCode][1])
-        emit("updatedFen", fen, room = game[gameCode][1])
-    if game[gameCode][1] == request.sid:
+    if gameCode[0:3] != "CPU":
+        movedict = updateBoard(" ".join(fen.split()[1:]))
+        if game[gameCode][0] == request.sid:
+            emit("oppoMove", movedict, room = game[gameCode][1])
+            emit("updatedFen", fen, room = game[gameCode][1])
+        if game[gameCode][1] == request.sid:
+            emit("oppoMove", movedict, room = game[gameCode][0])
+            emit("updatedFen", fen, room = game[gameCode][0])
+    else:
+        stockfish = Stockfish(r"stockfish_14_win_x64_avx2\stockfish_14_x64_avx2.exe")
+        fen = mine2stockfish(" ".join(fen.split()[1:]))
+        stockfish.set_fen_position(fen)
+        bestmove = stockfish.get_best_move()
+        stockfish.make_moves_from_current_position([bestmove])
+        newfen = bestmove + " " + stockfish2mine(stockfish.get_fen_position())
+        movedict = updateBoard(" ".join(newfen.split()[1:]))
         emit("oppoMove", movedict, room = game[gameCode][0])
-        emit("updatedFen", fen, room = game[gameCode][0])
+        emit("updatedFen", newfen, room = game[gameCode][0])
+
+
+def stockfish2mine(fen):
+    placeholder = fen.split()
+    if placeholder[1] == "w":
+        placeholder[1] ="White"
+    else:
+        placeholder[1] = "Black"
+    castling = ["K", "Q", "k", "q"]
+    for castle in castling:
+        if castle not in placeholder[2]:
+            placeholder[2] += "-"
+    columns = "abcdefgh"
+    if placeholder[3] != "-":
+        col = placeholder[3][0]
+        newcol = columns.find(col) + 1
+        placeholder[3] = newcol + placeholder[3][1]
+    fen = " ".join(placeholder)
+    return fen
+
+def mine2stockfish(fen):
+    placeholder = fen.split()
+    if placeholder[1] == "White":
+        placeholder[1] = "w"
+    else:
+        placeholder[1] = "b"
+    x = ""
+    for char in placeholder[2]:
+        if char != "-":
+            x += char
+    placeholder[2] = x
+    columns = "abcdefgh"
+    if placeholder[3] != "-":
+        col = placeholder[3][0]
+        newcol = columns[int(col)-1]
+        row = placeholder[3][1]
+        placeholder[3] = newcol + row
+    
+    fen = " ".join(placeholder)
+    return fen
 
 @socketio.on("createGame")
 def createGame(code):
-    game[code] = [request.sid]
-    print(game)
-
+    if code[0:3] != "CPU":
+        game[code] = [request.sid]
+        print(game)
+    else:
+        game[code] = [request.sid, "CPU"]
 @socketio.on("playerJoin")
 def playerJoin(code):
     print("second player joined")

@@ -14,12 +14,192 @@ body{
 }
 .board{
     
-    margin:auto;
-    width:40vw;
-    height:40vw;
+ 
+    /* width:40vw;
+    height:40vw; */
     background-color: black;
+
+    width: 40vw;
+    height: 40vw;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin: auto;
+    font-size: 50px;
+    transform: translate(-50%,-50%);
+    -ms-transform: translate(-50%,-50%);
     
 
+}
+
+
+.chatbox {
+
+    /* background-color: blue; */
+    width: 17vw;
+    height: 30vw;
+    position: relative;
+    top: 10vw;
+    margin: auto;
+}
+
+.messageinput {
+    border-width:0px;
+    border:none;
+ 
+    color: black;
+    background-color: rgb(182, 212, 212);
+    width: 17vw;
+    height: 1.5vw;
+    position: absolute;
+    padding:2px 0px;
+    /* display:inline-block; */
+
+    /* top: 28.5vw; */
+    /* left: 50%; */
+    margin: auto;
+    /* font-size: 50px; */
+    /* transform: translate(-50%,-50%);
+    -ms-transform: translate(-50%,-50%); */
+}
+
+input:focus, textarea:focus, select:focus{
+    outline: none;
+}
+
+.gameInfo {
+    width: 17vw;
+    height: 9vw;
+    background-color:  rgb(190, 220, 220);
+    position:absolute;
+    top: 0%;
+    text-align: center;
+    font-size: 2vw;
+}
+
+.messageoutput {
+    
+    background-color: rgb(190, 220, 220);
+    /* background-color: white; */
+    width: 17vw;
+    height: 28.5vw;
+    font-size: 2vw;
+    word-wrap: break-word;
+
+    position: relative;
+    overflow: auto;
+    /* top: 0vw; */
+    /* left: 50%; */
+/* ;
+    font-size: 50px;
+    transform: translate(-50%,-50%);
+    -ms-transform: translate(-50%,-50%); */
+}
+
+.chatSpacer {
+    margin-top:5px;
+    margin-left: 5px;
+    font-size:1vw;
+    color:gray;
+    opacity:0.8;
+    text-align: left;
+}
+
+
+.message {
+    margin:10px;
+    font-size: 0.75vw;
+    text-align: left;
+}
+
+
+.leftpanel {
+
+    /* background-color: gray; */
+    width: 17vw;
+    height: 40vw;
+    position: absolute;
+    top: 50%;
+    left: 15%;
+    margin: auto;
+    font-size: 50px;
+    transform: translate(-50%,-50%);
+    -ms-transform: translate(-50%,-50%);
+}
+
+.rightpanel {
+    background-color: gray;
+    width: 17vw;
+    height: 40vw;
+    position: absolute;
+    top: 50%;
+    left: 85%;
+    margin: auto;
+    font-size: 50px;
+    transform: translate(-50%,-50%);
+    -ms-transform: translate(-50%,-50%);
+}
+
+.pastMoves{
+    background-color: rgb(190, 220, 220);
+    width: 17vw;
+    height: 25vw;
+    position: absolute;
+    top:7.5vw;
+    overflow: auto;
+}
+
+ul{
+    margin:0;
+    padding:0;
+    /* padding-top:1vw; */
+    list-style-type:none;
+    float:left;
+    font-size:1vw;
+}
+
+li{
+    margin:auto;
+    text-align:center;
+    padding-top:1vw;
+}
+
+.moveNum {
+   width:3vw;
+}
+
+.whiteMoves {
+    width: 6vw;
+    
+}
+.blackMoves {
+    width: 6vw;
+}
+
+::-webkit-scrollbar {
+    width: 20px;
+}
+
+  ::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background-color: #b5c1c5;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #b5c1c5;
+    border-radius: 20px;
+}
+::-webkit-scrollbar-thumb {
+    background-color: #b5c1c5;
+    border-radius: 20px;
+    border: 6px solid transparent;
+    background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: #a8bbbf;
 }
 
 .square{

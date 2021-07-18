@@ -36,7 +36,7 @@ class Board:
             fen += "/"
         fen = fen[:-1]
         holder = pastFen.split()
-        fen += " " + holder[1] + " " + holder[2] + " " + holder[3]
+        fen += " " + holder[1] + " " + holder[2] + " " + holder[3] + " " + holder[4] + " " +holder[5]
 
         return fen
     
@@ -78,16 +78,15 @@ class Board:
         y = self.checkCastling(color, self.board, fen)
         z = self.screenPosMoves(self.checkEn_passant(color, fen), color, True)
 
-        x.extend(y)
-        x.extend(z)
-        return x
+        a = x.copy()
+        a.extend(y)
+        a.extend(z)
+
+        return (a, x, y, z)
         
 
-    def makeMove(self, color, move, fen): #makes a move directly on the instantiated board
+    def makeMove(self, color, move, fen, x, y, z): #makes a move directly on the instantiated board
 
-        x = self.screenPosMoves(self.generateMoves(color, self.board), color, False)
-        y = self.checkCastling(color, self.board, fen)
-        z = self.screenPosMoves(self.checkEn_passant(color, fen), color, True)
 
 
         if move in x:

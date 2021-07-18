@@ -2,16 +2,25 @@
 let squares = document.querySelectorAll('.square');
 const pieces = document.querySelectorAll(".blackrook, .whiterook, .blackbishop, .whitebishop, .blackknight, .whiteknight, .blackpawn, .whitepawn, .blackqueen, .whitequeen, .blackking, .whiteking");
 const background = document.querySelector(".wholeboard");
+
+let textbar = document.querySelector(".messageinput")
+let messages = document.querySelector(".messageoutput")
+let topbar = document.querySelector(".gameInfo")
+
 let draggedpiece = null;
 var lastaction;
 let parent;
-var fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR White KQkq -"
+var fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR White KQkq - 0 0"
 var socket = io.connect("https://gwuchess.herokuapp.com")
 let flip;
 const gameCode = localStorage["code"]
 var posMoves = {}
 var dstate = true
 var playercolor = ""
+
+var pastmoves = ["rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR White KQkq - 0 1"]
+var movesearch = pastmoves.length
+
 
 socket.on("connect", function(){
     if (localStorage["MOJ"] == "1") {
@@ -25,11 +34,10 @@ socket.on("connect", function(){
         opponentcolor = "Black"
         reloadBoard(fen, flip)
 
-    } else {
+    } else if (localStorage["MOJ"] == "2") {
         socket.emit("joinGame", gameCode)
         flip = true
         //reloadBoard(fen, flip)
-        
         let board = document.querySelector(".board")
         const squares = document.querySelectorAll(".square")
         board.innerHTML = "" 
@@ -40,7 +48,16 @@ socket.on("connect", function(){
         opponentcolor = "White"
 
         dstate = false
-        
+    } else {
+        flip = false
+        socket.emit("createGame", gameCode)
+        socket.emit("initialMoves")
+        socket.on("initialMoves", function(moves) {
+            posMoves = moves
+        })
+        playercolor = "White"
+        opponentcolor = "Black"
+        reloadBoard(fen, flip)
 
     }
 })
@@ -56,16 +73,41 @@ if (localStorage["MOJ"] == "1") {
     text.innerText = "Waiting ..." + "\n" + "Code: " + gameCode;
     overlay.appendChild(text)
     document.querySelector(".wholeboard").append(overlay)
-} else {
+} else if (localStorage["MOJ"] == "2") {
     socket.emit("playJoin", gameCode)
 }
 
 socket.on("playerJoin", function() {
     document.querySelector(".overlay").style.display = "none"
     document.querySelector(".overlay").remove()
-
     console.log("other player joined")
 })
+
+
+topbar.innerText = "gwuChess \n \n playing friend"
+messages.scrollTop = messages.scrollHeight
+
+
+textbar.addEventListener("keyup", function(e) {
+    if (e.code == "Enter") {
+        if (textbar.value.length != 0) {
+            const msg = textbar.value
+            newMessage(playercolor, msg)
+            socket.emit("chatmessage", gameCode, msg)
+        }
+        textbar.value = ""
+    }
+})
+
+socket.on("chatmessage", function (msg) {
+    newMessage(opponentcolor, msg)
+})
+
+
+
+
+
+
 
 for (let i = 0; i < squares.length; i ++) {
     if (Math.floor(i/8) % 2 == 0) {
@@ -83,6 +125,17 @@ for (let i = 0; i < pieces.length; i ++) {
     piece.addEventListener("dragstart", dragStart);
     piece.addEventListener("dragend", dragEnd);
 }
+
+document.addEventListener("keyup", function(e) {
+    if (e.code == "ArrowLeft" && movesearch > 0) {
+        movesearch -= 1
+        reloadBoard(pastmoves[movesearch], flip)
+    }
+    if (e.code == "ArrowRight" && movesearch < pastmoves.length-1) {
+        movesearch += 1
+        reloadBoard(pastmoves[movesearch], flip)
+    }
+})
 
 background.addEventListener("dragover", function (event) {
     if (draggedpiece != null) {
@@ -114,6 +167,7 @@ socket.on("oppoMove", function (moves) {
     if (posMoves == "stalemate" || posMoves == "checkmate"){
         socket.emit("gameOver", gameCode, opponentcolor+posMoves)
     }
+    movesearch = pastmoves.length
 })
 
 socket.on("gameOver", function (ending) {
@@ -127,8 +181,13 @@ socket.on("gameOver", function (ending) {
 })
 
 socket.on("updatedFen", function(newfen) {
-    fen = newfen
-    reloadBoard(fen, flip)
+
+    newMove(opponentcolor, newfen.split(" ")[0])
+    reloadBoard(newfen.split(" ").splice(1).join(" "), flip)
+
+    fen = newfen.split(" ").splice(1).join(" ")
+    
+    pastmoves.push(fen)
 })
 
 
@@ -183,11 +242,15 @@ for (let j = 0; j < squares.length; j ++) {
                     if (trialmove[0] == "P" && (trialmove[trialmove.length - 1] == "8" || trialmove[trialmove.length - 1] == "1")) {
                         fen = createProScreen(playercolor, fen)
                     } else {
-                        socket.emit("makemove", gameCode, fen)
-                        dstate = false
+                        
+                        socket.emit("makemove", gameCode, trialmove +" " +fen)
+                        pastmoves.push(fen)
+                        movesearch = pastmoves.length
                     }
 
-                    
+                    dstate = false
+                    newMove(playercolor, trialmove)
+
                 }
                 reloadBoard(fen, flip)
                 //const input = trialmove + fen
@@ -203,31 +266,7 @@ for (let j = 0; j < squares.length; j ++) {
     });
 }
 
-document.addEventListener("keyup", function (e) {
-    if (e.key == "r") {
-        const overlay = document.querySelector(".overlay")
-        overlay.className = "overlay"
 
-        const proback = document.createElement("div")
-        proback.className = "proback"
-        overlay.appendChild(proback)
-
-        for (let i = 0; i < 4; i ++) {
-            proback.append(createSquare("prosquare", "white"))
-        }
-
-        document.querySelector(".wholeboard").append(overlay)
-        const prosquares = document.querySelectorAll(".prosquare")
-
-        let fourpieces = ["R","B", "N", "Q"]
-        for (let i = 0; i < 4; i ++) {
-            placepiece = createPiece(fourpieces[i], "white")
-            placepiece.draggable = false
-            prosquares[i].append(placepiece)
-            placepiece.addEventListener("click", pieceChosen)
-        }
-    }
-})
 
 function createProScreen (color, fakefen) {
     const overlay = document.createElement("div")
@@ -254,30 +293,42 @@ function createProScreen (color, fakefen) {
             // document.querySelector(".overlay").style.display = "none"
             //document.querySelector(".overlay").remove()
             let piece = this.className
+            let placeholder = fakefen.split(" ")
+            let piecefen = placeholder[0]
             if (piece.substring(5,7) == "kn") {
                 piece = piece.substring(0,5) + piece.substring(6,)
             }
-            if (piece[0] == "b") {
-                fakefen = fakefen.split("").reverse().join("")
-            }
-            for (let i = 0; i < fakefen.length; i++) {
-                if (fakefen[i].toLowerCase() == "p") {
-                    let chosenpiece = piece[5].toUpperCase()
-                    fakefen = fakefen.substring(0,i) + chosenpiece + fakefen.substring(i+1,)
-                    if (piece[0] == "b") {
-                        fakefen = fakefen.split("").reverse().join("")
+            if (piece[0] == "B") {
+                console.log(piece)
+
+                for (let i = piecefen.length-1; i >= 0; i --) {
+                    if (piecefen[i].toLowerCase() == "p") {
+                        let chosenpiece = piece[5].toLowerCase()
+                        piecefen = piecefen.substring(0,i) + chosenpiece + piecefen.substring(i+1,)
+                        break
                     }
-                    break
+                }
+
+            } else {
+                for (let i = 0; i < fakefen.length; i++) {
+                    if (piecefen[i].toLowerCase() == "p") {
+                        let chosenpiece = piece[5].toUpperCase()
+                        piecefen = piecefen.substring(0,i) + chosenpiece + piecefen.substring(i+1,)
+                        break
+                    }
                 }
             }
+            fakefen = piecefen + " " + placeholder[1] + " " + placeholder[2] + " " + placeholder[3] + " " + placeholder[4] + " " + placeholder[5]
             reloadBoard(fakefen, flip)
             socket.emit("makemove", gameCode, fakefen)
             dstate = false
 
-            console.log(fakefen)
+            //console.log(fakefen)
         })
     }
     fen = fakefen
+    pastmoves.push(fen)
+    movesearch = pastmoves.length
 
     return fakefen
 }
@@ -498,4 +549,34 @@ function createPiece (name, color) {
     element.addEventListener("dragstart", dragStart);
     element.addEventListener("dragend", dragEnd);
     return element
+}
+
+
+function newMessage (mcolor, msg) {
+    let messages = document.querySelector(".messageoutput")
+    let newmessage = document.createElement("p")
+    newmessage.innerText = msg
+    newmessage.className = "message"
+    newmessage.innerText = "[" + mcolor + "] " + newmessage.innerText
+    messages.appendChild(newmessage)
+    messages.scrollTop = messages.scrollHeight
+}
+
+
+
+function newMove (movecolor, move) {
+    let pastMoves = document.querySelector(".pastMoves")
+    let moveNum = document.querySelector(".moveNum")
+    let whiteMoves = document.querySelector(".whiteMoves")
+    let blackMoves = document.querySelector(".blackMoves")
+    if (movecolor == "White") {
+        whiteMove = document.createElement("li")
+        whiteMove.innerText = move
+        whiteMoves.appendChild(whiteMove)
+    } else {
+        blackMove = document.createElement("li")
+        blackMove.innerText = move
+        blackMoves.appendChild(blackMove)
+    }
+    pastMoves.scrollTop = pastMoves.scrollHeight
 }
