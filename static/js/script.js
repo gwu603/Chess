@@ -62,7 +62,9 @@ socket.on("connect", function(){
     }
 })
 
-
+socket.on("message", function(msg) {
+    console.log(msg)
+})
 
 
 if (localStorage["MOJ"] == "1") {

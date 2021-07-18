@@ -120,12 +120,25 @@ def makemove(gameCode, fen):
             emit("oppoMove", movedict, room = game[gameCode][0])
             emit("updatedFen", fen, room = game[gameCode][0])
     else:
+        send("before stockfish instantiation")
         stockfish = Stockfish(r"stockfish_14_win_x64_avx2\stockfish_14_x64_avx2.exe")
+        send("after stockfish instantiation")
+
         fen = mine2stockfish(" ".join(fen.split()[1:]))
+        send("after fen conversion")
+
         stockfish.set_fen_position(fen)
+        send("after setting fen")
+
         bestmove = stockfish.get_best_move()
+        send("after getting best move")
+
         stockfish.make_moves_from_current_position([bestmove])
+        send("making move")
+
         newfen = bestmove + " " + stockfish2mine(stockfish.get_fen_position())
+        
+
         movedict = updateBoard(" ".join(newfen.split()[1:]))
         emit("oppoMove", movedict, room = game[gameCode][0])
         emit("updatedFen", newfen, room = game[gameCode][0])
