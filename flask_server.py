@@ -121,7 +121,7 @@ def makemove(gameCode, fen):
             emit("updatedFen", fen, room = game[gameCode][0])
     else:
         send("before stockfish instantiation")
-        stockfish = Stockfish(r"stockfish_14_win_x64_avx2\stockfish_14_x64_avx2.exe")
+        stockfish = Stockfish(r"StockfishLinux/stockfish_14_x64_bmi2")
         send("after stockfish instantiation")
 
         fen = mine2stockfish(" ".join(fen.split()[1:]))
