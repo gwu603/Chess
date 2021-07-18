@@ -4,7 +4,7 @@ let submit = document.getElementById("submit")
 let playEngine = document.getElementById("playEngine")
 
 var socket = io.connect("https://gwuchess.herokuapp.com")
-var socket = io.connect("http://127.0.0.1:5000")
+// var socket = io.connect("http://127.0.0.1:5000")
 socket.on("connect", function () {
     console.log("connected")
 })
