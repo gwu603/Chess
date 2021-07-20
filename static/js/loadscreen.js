@@ -35,9 +35,9 @@ submit.addEventListener("click", function () {
 
 })
 
-playEngine.addEventListener("click", function() {
-    const code = Math.random().toString(36).substring(2,7);
-    localStorage["code"] = "CPU" + code
-    localStorage["MOJ"] = "3"
-    window.location.href = "test"
-})
+// playEngine.addEventListener("click", function() {
+//     const code = Math.random().toString(36).substring(2,7);
+//     localStorage["code"] = "CPU" + code
+//     localStorage["MOJ"] = "3"
+//     window.location.href = "test"
+// })

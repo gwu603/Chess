@@ -6,7 +6,7 @@ from piece import Piece
 from board import Board
 from stockfish import Stockfish
 
-from flask_sqlalchemy import SQLAlchemy
+# from flask_sqlalchemy import SQLAlchemy
 
 
 
