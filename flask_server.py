@@ -12,8 +12,8 @@ from flask_sqlalchemy import SQLAlchemy
 
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = r'sqlite:///C:\Users\yiqin\Desktop\Chess Project\test.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# app.config['SQLALCHEMY_DATABASE_URI'] = r'sqlite:///C:\Users\yiqin\Desktop\Chess Project\test.db'
+# app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # db = SQLAlchemy(app)
 # db2 = SQLAlchemy(app)
 
