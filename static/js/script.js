@@ -23,6 +23,13 @@ var playercolor = ""
 var pastmoves = ["rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR White KQkq - 0 1"]
 var movesearch = pastmoves.length
 
+var standardMove = new Audio('static/audio/standardMove.mp3');
+var standardMove2 = new Audio('static/audio/standardMove.mp3');
+var outOfBound = new Audio('static/audio/outOfBound.mp3');
+var capturePiece = new Audio('static/audio/capturePiece.mp3');
+var capturePiece2 = new Audio('static/audio/capturePiece.mp3');
+var check = new Audio('http://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/move-check.mp3');
+var gameEnd = new Audio('http://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/game-end.mp3');
 
 socket.on("connect", function(){
     if (localStorage["MOJ"] == "1") {
@@ -88,7 +95,7 @@ socket.on("playerJoin", function() {
 })
 
 
-topbar.innerText = "gwuChess \n \n playing friend"
+// topbar.innerText = "gwuChess \n \n playing friend"
 messages.scrollTop = messages.scrollHeight
 
 
@@ -159,6 +166,7 @@ background.addEventListener("drop", function(){
 
     if (lastaction == "dragleave") {
         reloadBoard(fen, flip)
+        outOfBound.play()
     }
 });
 
@@ -172,9 +180,11 @@ socket.on("oppoMove", function (moves) {
         socket.emit("gameOver", gameCode, opponentcolor+posMoves)
     }
     movesearch = pastmoves.length
+
 })
 
 socket.on("gameOver", function (ending) {
+    gameEnd.play()
     const overlay = document.createElement("div")
     overlay.className = "overlay"
     const text = document.createElement("div")
@@ -191,7 +201,17 @@ socket.on("updatedFen", function(newfen) {
 
     fen = newfen.split(" ").splice(1).join(" ")
     
+    if (newfen.split(" ")[0][3] == "x"){
+        capturePiece2.play()
+    } else {
+        standardMove2.play()
+    }
     pastmoves.push(fen)
+    
+})
+
+socket.on("check", function(color) {
+    check.play()
 })
 
 
@@ -241,6 +261,8 @@ for (let j = 0; j < squares.length; j ++) {
                 let trialmove = firstletter + move[0] + move[1] + extra + move[2] + move[3];
 
                 if (posMoves[trialmove] != null && fen.split(" ")[1] == playercolor) {
+
+ 
                     fen = posMoves[trialmove]
 
                     if (trialmove[0] == "P" && (trialmove[trialmove.length - 1] == "8" || trialmove[trialmove.length - 1] == "1")) {
@@ -252,8 +274,15 @@ for (let j = 0; j < squares.length; j ++) {
                         movesearch = pastmoves.length
                     }
 
+                    if (extra == "x") {
+                        capturePiece.play()
+                    } else {
+                        standardMove.play()
+                    }
+
                     dstate = false
                     newMove(playercolor, trialmove)
+
 
                 }
                 reloadBoard(fen, flip)
@@ -567,13 +596,15 @@ function newMessage (mcolor, msg) {
 }
 
 
-
 function newMove (movecolor, move) {
     let pastMoves = document.querySelector(".pastMoves")
     let moveNum = document.querySelector(".moveNum")
     let whiteMoves = document.querySelector(".whiteMoves")
     let blackMoves = document.querySelector(".blackMoves")
     if (movecolor == "White") {
+        newNum = document.createElement("li")
+        newNum.innerText = moveNum.childElementCount + 1
+        moveNum.appendChild(newNum)
         whiteMove = document.createElement("li")
         whiteMove.innerText = move
         whiteMoves.appendChild(whiteMove)

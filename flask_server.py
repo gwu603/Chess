@@ -6,11 +6,50 @@ from piece import Piece
 from board import Board
 from stockfish import Stockfish
 
+from flask_sqlalchemy import SQLAlchemy
+
+
+
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = r'sqlite:///C:\Users\yiqin\Desktop\Chess Project\test.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# db = SQLAlchemy(app)
+# db2 = SQLAlchemy(app)
+
+
+socketio = SocketIO(app, cors_allowed_origins = "*")
+
+# class Games(db2.Model):
+#     id = db2.Column(db.Integer, primary_key=True)
+#     players = db2.Column(db.String(80), unique=True, nullable=False)
+#     moves = db2.Column(db.String(80), unique=True, nullable=False)
+#     fens = db2.Column(db.String(120), unique=True, nullable=False)
+
+#     def __repr__(self):
+#         return str(self.id) + " " + self.moves + " " + self.fens
+
+# class User(db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     username = db.Column(db.String(80), unique=True, nullable=False)
+#     password = db.Column(db.String(120), unique=True, nullable=False)
+
+#     def __repr__(self):
+#         return str(self.id) + " " + self.username + " " + self.email
+
+# print(Games.query.all())
+# print(User.query.all())
+
+
+# x = User.query.filter_by(username = "admin").first()
+# x.username = "wozer"
+# print(x)
 
 # pieces = []
 # board = Board(pieces)
 # board.board = board.loadFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR")
 game = {}
+client = {}
 
 def updateBoard(fen):
     pieces = []
@@ -71,8 +110,6 @@ def updateBoard(fen):
     return movedict
 
 
-app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins = "*")
 
 @app.route("/")
 def home():
@@ -85,6 +122,16 @@ def test():
 @app.route("/activegames")
 def activegames():
     return str(game)
+
+# @socketio.on('disconnect')
+# def test_disconnect():
+#     if len(game[client[request.sid]]) <= 1:
+#         del game[client[request.sid]]
+#     elif game[client[request.sid]][0] == request.sid:
+#         game[client[request.sid]].remove(0)
+#     else:
+#         game[client[request.sid]].remove(1)
+#     print('Client disconnected')
 
 
 @socketio.on('message')
@@ -109,7 +156,16 @@ def switchScreen():
 
 @socketio.on("makemove")
 def makemove(gameCode, fen):
-    
+    pieces = []
+    board = Board(pieces)
+    board.board, xcolor = board.loadFen(" ".join(fen.split()[1:]))
+
+
+    if board.checkChecker(xcolor, board.board):
+        emit("check", xcolor, room = game[gameCode][1])
+        emit("check", xcolor, room = game[gameCode][0])
+
+
     # holder = fen.split()
     if gameCode[0:3] != "CPU":
         movedict = updateBoard(" ".join(fen.split()[1:]))
@@ -120,24 +176,33 @@ def makemove(gameCode, fen):
             emit("oppoMove", movedict, room = game[gameCode][0])
             emit("updatedFen", fen, room = game[gameCode][0])
     else:
-        send("before stockfish instantiation")
-        stockfish = Stockfish(r"StockfishLinux/stockfish_14_x64_bmi2")
-        send("after stockfish instantiation")
 
+        pieces = []
+        board = Board(pieces)
+
+        board.board, xcolor = board.loadFen(" ".join(fen.split()[1:]))
+
+        cols = "abcdefgh"
+
+        stockfish = Stockfish(r"stockfish_14_win_x64_avx2\stockfish_14_x64_avx2.exe")
         fen = mine2stockfish(" ".join(fen.split()[1:]))
-        send("after fen conversion")
-
         stockfish.set_fen_position(fen)
-        send("after setting fen")
-
         bestmove = stockfish.get_best_move()
-        send("after getting best move")
-
         stockfish.make_moves_from_current_position([bestmove])
-        send("making move")
+        # send("making move")
+        startcol = int(cols.find(bestmove[0]))+1
+        endcol = int(cols.find(bestmove[2]))+1
 
-        newfen = bestmove + " " + stockfish2mine(stockfish.get_fen_position())
-        
+        extra = ""
+        if board.board[int(bestmove[3])-1][endcol-1].name != ".":
+            extra = "x"
+
+        newbestmove = board.board[int(bestmove[1])-1][startcol-1].name + str(startcol) + str(bestmove[1]) + extra + str(endcol) + str(bestmove[3]) 
+        newfen = newbestmove + " " + stockfish2mine(stockfish.get_fen_position())
+        board.board, xcolor = board.loadFen(stockfish2mine(stockfish.get_fen_position()))
+
+        if board.checkChecker(xcolor, board.board):
+            emit("check", xcolor, room = game[gameCode][0])        
 
         movedict = updateBoard(" ".join(newfen.split()[1:]))
         emit("oppoMove", movedict, room = game[gameCode][0])
@@ -187,6 +252,7 @@ def mine2stockfish(fen):
 def createGame(code):
     if code[0:3] != "CPU":
         game[code] = [request.sid]
+        client[request.sid] = code
         print(game)
     else:
         game[code] = [request.sid, "CPU"]
@@ -198,6 +264,7 @@ def playerJoin(code):
 @socketio.on("joinGame")
 def joinGame(code):
     game[code].append(request.sid)
+    client[request.sid] = code
     emit("playerJoin", room = game[code][0])
     print(game)
 

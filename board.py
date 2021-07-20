@@ -347,6 +347,18 @@ class Board:
             if board[int(val[-1])-1][int(val[-2])-1].name == "K":
                 return True
         return False
+    
+    def checkChecker(self, color, board):
+        if color == "White":
+            color = "Black"
+        else:
+            color = "White"
+        x = self.generateMoves(color, board)
+        for val in x:
+            if board[int(val[-1])-1][int(val[-2])-1].name == "K":
+                return True
+        return False
+
 
     def getSquare(self, square): #returns the piece of a given square on the board
         return self.board[square[1]][square[0]]
