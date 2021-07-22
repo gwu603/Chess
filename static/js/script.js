@@ -1,27 +1,32 @@
+var squares = document.querySelectorAll('.square');
+var pieces = document.querySelectorAll(".blackrook, .whiterook, .blackbishop, .whitebishop, .blackknight, .whiteknight, .blackpawn, .whitepawn, .blackqueen, .whitequeen, .blackking, .whiteking");
+var background = document.querySelector(".wholeboard");
+var board = document.querySelector(".board");
 
-let squares = document.querySelectorAll('.square');
-const pieces = document.querySelectorAll(".blackrook, .whiterook, .blackbishop, .whitebishop, .blackknight, .whiteknight, .blackpawn, .whitepawn, .blackqueen, .whitequeen, .blackking, .whiteking");
-const background = document.querySelector(".wholeboard");
 
-let textbar = document.querySelector(".messageinput")
-let messages = document.querySelector(".messageoutput")
-let topbar = document.querySelector(".gameInfo")
+var textbar = document.querySelector(".messageinput")
+var messages = document.querySelector(".messageoutput")
+var topbar = document.querySelector(".gameInfo")
 
-let draggedpiece = null;
+var draggedpiece = null;
 var lastaction;
-let parent;
-var fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR White KQkq - 0 0"
-var socket = io.connect("https://gwuchess.herokuapp.com")
-// var socket = io.connect("http://127.0.0.1:5000")
+var parent;
+var fen; 
+// var socket = io.connect("https://gwuchess.herokuapp.com")
 
-let flip;
-const gameCode = localStorage["code"]
-var posMoves = {}
-var dstate = true
-var playercolor = ""
+var socket = io()
 
-var pastmoves = ["rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR White KQkq - 0 1"]
-var movesearch = pastmoves.length
+var flip; //Whether or not the board should be flipped
+var gameCode = localStorage["code"] //The code of the overall game
+var posMoves = {} //dictionary of possible moves that can be made with each move mapped to their respective fen
+var dstate; //whether or not the given player is allowed to move
+var playercolor; //color of the current person playing
+var opponentcolor; //color of the opponent playing
+
+var pastFens = ["rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR White KQkq - 0 1"]
+var pastMoves = []
+var movesearch = pastMoves.length
+var chatHistory = []
 
 var standardMove = new Audio('static/audio/standardMove.mp3');
 var standardMove2 = new Audio('static/audio/standardMove.mp3');
@@ -31,52 +36,46 @@ var capturePiece2 = new Audio('static/audio/capturePiece.mp3');
 var check = new Audio('http://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/move-check.mp3');
 var gameEnd = new Audio('http://images.chesscomfiles.com/chess-themes/sounds/_MP3_/default/game-end.mp3');
 
+
 socket.on("connect", function(){
+
     if (localStorage["MOJ"] == "1") {
-        socket.emit("createGame", gameCode)
-        flip = false
-        socket.emit("initialMoves")
-        socket.on("initialMoves", function(moves) {
-            posMoves = moves
-        })
         playercolor = "White"
         opponentcolor = "Black"
-        reloadBoard(fen, flip)
-
-    } else if (localStorage["MOJ"] == "2") {
-        socket.emit("joinGame", gameCode)
+        flip = false
+    } else if (localStorage["MOJ"] == "2"){
+        playercolor = "Black"
+        opponentcolor = "White"
         flip = true
-        //reloadBoard(fen, flip)
-        let board = document.querySelector(".board")
-        const squares = document.querySelectorAll(".square")
-        board.innerHTML = "" 
         for (let i = squares.length-1; i >= 0; i --) {
             board.appendChild(squares[i])
         }
-        playercolor = "Black"
-        opponentcolor = "White"
-
-        dstate = false
-    } else {
-        flip = false
-        socket.emit("createGame", gameCode)
-        socket.emit("initialMoves")
-        socket.on("initialMoves", function(moves) {
-            posMoves = moves
-        })
-        playercolor = "White"
-        opponentcolor = "Black"
-        reloadBoard(fen, flip)
-
     }
+    socket.emit("joinGame", gameCode)
+    socket.emit("get-data", gameCode)
+    socket.on("posMoves", function (moves) {
+        posMoves = moves
+    })
+    socket.on("set-data", function (data) {
+        dstate = false
+        pastMoves = data["pastMoves"]
+        pastFens = data["pastFens"]
+        chatHistory = data["chatHistory"]
+        fen = pastFens[pastFens.length-1]
+
+        if (fen.split(" ")[1] == playercolor) {
+            dstate = true
+        }
+        if (!data["twoplayer"]) {
+            waitingOverlay()
+        }
+        reloadMoveDisplay(pastMoves)
+        reloadChatHistory(chatHistory)
+        reloadBoard(fen, flip)
+    })
 })
 
-socket.on("message", function(msg) {
-    console.log(msg)
-})
-
-
-if (localStorage["MOJ"] == "1") {
+function waitingOverlay () {
     const overlay = document.createElement("div")
     overlay.className = "overlay"
     const text = document.createElement("div")
@@ -84,39 +83,36 @@ if (localStorage["MOJ"] == "1") {
     text.innerText = "Waiting ..." + "\n" + "Code: " + gameCode;
     overlay.appendChild(text)
     document.querySelector(".wholeboard").append(overlay)
-} else if (localStorage["MOJ"] == "2") {
-    socket.emit("playJoin", gameCode)
 }
 
+
 socket.on("playerJoin", function() {
-    document.querySelector(".overlay").style.display = "none"
-    document.querySelector(".overlay").remove()
+    removeWaitingOverlay()
     console.log("other player joined")
 })
 
+function removeWaitingOverlay () {
+    document.querySelector(".overlay").style.display = "none"
+}
+
 
 // topbar.innerText = "gwuChess \n \n playing friend"
-messages.scrollTop = messages.scrollHeight
 
 
 textbar.addEventListener("keyup", function(e) {
     if (e.code == "Enter") {
         if (textbar.value.length != 0) {
-            const msg = textbar.value
-            newMessage(playercolor, msg)
-            socket.emit("chatmessage", gameCode, msg)
+            newMessage(playercolor, textbar.value)
+            socket.emit("chatmessage", {"gameCode":gameCode, "chatHistory":chatHistory})
         }
         textbar.value = ""
     }
 })
 
-socket.on("chatmessage", function (msg) {
-    newMessage(opponentcolor, msg)
+socket.on("chatmessage", function (ch) {
+    chatHistory = ch
+    reloadChatHistory(chatHistory)
 })
-
-
-
-
 
 
 
@@ -140,11 +136,11 @@ for (let i = 0; i < pieces.length; i ++) {
 document.addEventListener("keyup", function(e) {
     if (e.code == "ArrowLeft" && movesearch > 0) {
         movesearch -= 1
-        reloadBoard(pastmoves[movesearch], flip)
+        reloadBoard(pastFens[movesearch], flip)
     }
-    if (e.code == "ArrowRight" && movesearch < pastmoves.length-1) {
+    if (e.code == "ArrowRight" && movesearch < pastFens.length-1) {
         movesearch += 1
-        reloadBoard(pastmoves[movesearch], flip)
+        reloadBoard(pastFens[movesearch], flip)
     }
 })
 
@@ -172,18 +168,34 @@ background.addEventListener("drop", function(){
 
 
 
-socket.on("oppoMove", function (moves) {
-    
-    posMoves = moves
-    dstate = true
-    if (posMoves == "stalemate" || posMoves == "checkmate"){
-        socket.emit("gameOver", gameCode, opponentcolor+posMoves)
-    }
-    movesearch = pastmoves.length
+socket.on("oppoMove", function (data) {
+    // posMoves = data["posMove"]
+    fen = data["fen"]
+    pastFens.push(fen)
+    pastMoves.push(data["move"])
+    movesearch = pastMoves.length
+    // newMove(opponentcolor, data["move"])
 
+    if (data["move"][3] == "x") {
+        capturePiece2.play()
+    } else {
+        standardMove2.play()
+    }
+    dstate = true
+    reloadMoveDisplay(pastMoves)
+    reloadBoard(fen,flip)
+})
+
+
+socket.on("check", function(color) {
+    check.play()
 })
 
 socket.on("gameOver", function (ending) {
+    gameOver(ending)
+})
+
+function gameOver (ending) {
     gameEnd.play()
     const overlay = document.createElement("div")
     overlay.className = "overlay"
@@ -192,27 +204,26 @@ socket.on("gameOver", function (ending) {
     text.innerText = ending.substring(0,5) + " " + ending.substring(5,) + "d"
     overlay.appendChild(text)
     document.querySelector(".wholeboard").append(overlay)
-})
+}
 
-socket.on("updatedFen", function(newfen) {
 
-    newMove(opponentcolor, newfen.split(" ")[0])
-    reloadBoard(newfen.split(" ").splice(1).join(" "), flip)
+// socket.on("updatedFen", function(newfen) {
 
-    fen = newfen.split(" ").splice(1).join(" ")
+//     newMove(opponentcolor, newfen.split(" ")[0])
+//     reloadBoard(newfen.split(" ").splice(1).join(" "), flip)
+
+//     fen = newfen.split(" ").splice(1).join(" ")
     
-    if (newfen.split(" ")[0][3] == "x"){
-        capturePiece2.play()
-    } else {
-        standardMove2.play()
-    }
-    pastmoves.push(fen)
+//     if (newfen.split(" ")[0][3] == "x"){
+//         capturePiece2.play()
+//     } else {
+//         standardMove2.play()
+//     }
+//     pastFens.push(fen)
     
-})
+// })
 
-socket.on("check", function(color) {
-    check.play()
-})
+
 
 
 for (let j = 0; j < squares.length; j ++) {
@@ -259,19 +270,20 @@ for (let j = 0; j < squares.length; j ++) {
                     extra = "x"
                 }
                 let trialmove = firstletter + move[0] + move[1] + extra + move[2] + move[3];
+                console.log(trialmove)
 
                 if (posMoves[trialmove] != null && fen.split(" ")[1] == playercolor) {
 
  
                     fen = posMoves[trialmove]
-
+                    pastMoves.push(trialmove)
+                    
+                    movesearch = pastMoves.length
                     if (trialmove[0] == "P" && (trialmove[trialmove.length - 1] == "8" || trialmove[trialmove.length - 1] == "1")) {
                         fen = createProScreen(playercolor, fen)
                     } else {
-                        
-                        socket.emit("makemove", gameCode, trialmove +" " +fen)
-                        pastmoves.push(fen)
-                        movesearch = pastmoves.length
+                        pastFens.push(fen)
+                        socket.emit("makemove", {"gameCode": gameCode, "move": trialmove, "fen":fen})
                     }
 
                     if (extra == "x") {
@@ -281,9 +293,12 @@ for (let j = 0; j < squares.length; j ++) {
                     }
 
                     dstate = false
-                    newMove(playercolor, trialmove)
+                    reloadMoveDisplay(pastMoves)
+                    // newMove(playercolor, trialmove)
 
 
+                } else {
+                    outOfBound.play()
                 }
                 reloadBoard(fen, flip)
                 //const input = trialmove + fen
@@ -360,9 +375,7 @@ function createProScreen (color, fakefen) {
         })
     }
     fen = fakefen
-    pastmoves.push(fen)
-    movesearch = pastmoves.length
-
+    pastFens.push(fen)
     return fakefen
 }
 
@@ -372,40 +385,12 @@ function removeDisplay () {
     console.log("display removed")
 }
 
-// socket.on('makemove', function(msg) {
-//     console.log("msg recieved")
-//     if (msg[0] == "T") {
-//         fen = msg.substring(1,)
-//     }
-//     reloadBoard(fen, flip)
-// })
-
-
-
-
-
-// function nextFunction (response, element, square) {
-//     console.log(response, "YOOOOOO")
-//     if (response[0] == "F") {
-//         dropped = false
-//         console.log("invalid")
-        
-//     } else {
-//         fen = response.substring(1, response.length)
-//         square.appendChild(element)
-//     }
-    
-//     newstatus = status + 1
-//     console.log(newstatus, status)
-// }
 
 function createSquare (name) {
     const text = document.createElement("div")
     text.className = name
     return text
 }
-
-
 
 
 function calculateMove (start, end) {
@@ -479,6 +464,8 @@ function reloadBoard (fen, flip) {
     let onlyPieces = fen.split(" ")[0]
     const lowercase = "prnbqk"
     const uppercase = "PRNBQK"
+
+    
 
     if (flip) {
         let placeholder =""
@@ -585,33 +572,63 @@ function createPiece (name, color) {
 }
 
 
-function newMessage (mcolor, msg) {
+function reloadChatHistory (ch) {
     let messages = document.querySelector(".messageoutput")
-    let newmessage = document.createElement("p")
-    newmessage.innerText = msg
+    messages.innerHTML = ""
+    for (let i = 0; i<ch.length; i ++) {
+        newmessage = document.createElement("p")
+        newmessage.innerText = ch[i]
+        newmessage.className = "message"
+        messages.appendChild(newmessage)
+        messages.scrollTop = messages.scrollHeight
+    }
+}
+
+function newMessage(color, msg) {
+    let messages = document.querySelector(".messageoutput")
+    newmessage = document.createElement("p")
+    newmessage.innerText = "[" + color + "] " + msg
+    chatHistory.push(newmessage.innerText)
     newmessage.className = "message"
-    newmessage.innerText = "[" + mcolor + "] " + newmessage.innerText
     messages.appendChild(newmessage)
     messages.scrollTop = messages.scrollHeight
 }
 
-
-function newMove (movecolor, move) {
-    let pastMoves = document.querySelector(".pastMoves")
+function reloadMoveDisplay (moves) {
+    console.log(moves)
+    let pastMovesDisplay = document.querySelector(".pastMovesDisplay")
     let moveNum = document.querySelector(".moveNum")
     let whiteMoves = document.querySelector(".whiteMoves")
     let blackMoves = document.querySelector(".blackMoves")
-    if (movecolor == "White") {
-        newNum = document.createElement("li")
-        newNum.innerText = moveNum.childElementCount + 1
-        moveNum.appendChild(newNum)
-        whiteMove = document.createElement("li")
-        whiteMove.innerText = move
-        whiteMoves.appendChild(whiteMove)
-    } else {
-        blackMove = document.createElement("li")
-        blackMove.innerText = move
-        blackMoves.appendChild(blackMove)
+    moveNum.innerHTML = ""
+    whiteMoves.innerHTML = ""
+    blackMoves.innerHTML = ""
+    for (let i = 0; i < moves.length; i ++) {
+        if (i%2 == 0) {
+            newNum = document.createElement("li")
+            whiteMove = document.createElement("li")
+            newNum.innerText = String(i+1)
+            whiteMove.innerText = moves[i]
+            moveNum.appendChild(newNum)
+            whiteMoves.appendChild(whiteMove)
+        } else {
+            blackMove = document.createElement("li")
+            blackMove.innerText = moves[i]
+            blackMoves.appendChild(blackMove)
+        }
+
     }
-    pastMoves.scrollTop = pastMoves.scrollHeight
+    // if (movecolor == "White") {
+    //     newNum = document.createElement("li")
+    //     newNum.innerText = moveNum.childElementCount + 1
+    //     moveNum.appendChild(newNum)
+    //     whiteMove = document.createElement("li")
+    //     whiteMove.innerText = move
+    //     whiteMoves.appendChild(whiteMove)
+    // } else {
+    //     blackMove = document.createElement("li")
+    //     blackMove.innerText = move
+    //     blackMoves.appendChild(blackMove)
+    // }
+    pastMovesDisplay.scrollTop = pastMovesDisplay.scrollHeight
 }

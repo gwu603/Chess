@@ -17,7 +17,7 @@ body{
  
     /* width:40vw;
     height:40vw; */
-    background-color: black;
+    /* background-color: black; */
 
     width: 40vw;
     height: 40vw;
@@ -140,7 +140,7 @@ input:focus, textarea:focus, select:focus{
     -ms-transform: translate(-50%,-50%);
 }
 
-.pastMoves{
+.pastMovesDisplay{
     background-color: rgb(190, 220, 220);
     width: 17vw;
     height: 25vw;

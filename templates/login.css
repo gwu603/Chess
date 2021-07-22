@@ -26,6 +26,32 @@ body{
     padding-left:5px;
     padding-right:5px;
     height:2em;
-    top: 50%;
+    top: 25%;
     position:relative;
+}
+
+.chessicon {
+    /* width:auto; */
+    
+    width:100px;
+    top:100px;
+    position:relative;
+
+}
+
+.createAccount {
+    margin:5px;
+    padding-left:10px;
+    padding-right:10px;
+    height:2em;
+    top: 30%;
+    position:relative;
+    /* padding: 0; */
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+.createAccount:hover{
+    background-color:rgb(245, 245, 255);
 }

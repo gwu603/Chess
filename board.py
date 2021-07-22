@@ -2,8 +2,8 @@ from piece import Piece
 
 class Board:
 
-    def __init__(self, pieces):
-        self.pieces = pieces
+    def __init__(self):
+        
         self.board = [[]]
 
     def __str__(self):
